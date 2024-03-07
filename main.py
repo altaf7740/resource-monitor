@@ -20,6 +20,7 @@ class UsageMonitor:
         self.email = email
         self.password = password
         self.recipient_emails = recipient_emails
+        self.today = datetime.now().strftime("%Y-%m-%d")
 
     def send_email(self, subject, body, attachments=None):
         """
@@ -98,7 +99,7 @@ class UsageMonitor:
         """
         Writes usage data to a CSV file.
         """
-        with open(f'usage_{datetime.now().strftime("%Y-%m-%d")}.csv', mode='a', newline='') as file:
+        with open(f'usage_{self.today}.csv', mode='a', newline='') as file:
             writer = csv.writer(file)
             writer.writerow([timestamp, ram_percent, cpu_percent])
 
@@ -110,23 +111,24 @@ class UsageMonitor:
         subject = "Daily CPU and RAM Usage Report | i-Tips"
         body = f"Hi, \n\nPlease find the daily CPU and RAM usage of below system report attached. \n\nOS: {info['os']}\nMemory Size: {info['memory_size']}\nCPU Model: {info['cpu_model']}\nGraphics: {info['graphics']}\nStorage Size: {info['storage']}\n\nThank you.\ni-Tips Bot"
         plot_path = self.plot_usage()
-        attachments = [plot_path, f'usage_{datetime.now().strftime("%Y-%m-%d")}.csv']
+        attachments = [plot_path, f'usage_{self.today}.csv']
         self.send_email(subject, body, attachments)
         for attachment in attachments:
             os.remove(attachment)
+        self.today = datetime.now().strftime("%Y-%m-%d")
 
     def read_usage_data(self):
         """
         Reads usage data from CSV file.
         """
-        df = pd.read_csv(f'usage_{datetime.now().strftime("%Y-%m-%d")}.csv', names=["Timestamp", "RAM", "CPU"])
+        df = pd.read_csv(f'usage_{self.today}.csv', names=["Timestamp", "RAM", "CPU"])
         return df.to_string(index=False)
 
     def plot_usage(self):
         """
         Plots CPU and RAM usage with 30-minute intervals and returns the plot file path.
         """
-        df = pd.read_csv(f'usage_{datetime.now().strftime("%Y-%m-%d")}.csv', names=["Timestamp", "RAM", "CPU"])
+        df = pd.read_csv(f'usage_{self.today}.csv', names=["Timestamp", "RAM", "CPU"])
         df['Timestamp'] = pd.to_datetime(df['Timestamp'], format='%Y-%m-%d %H:%M:%S')
         df.set_index('Timestamp', inplace=True)
         df_resampled = df.resample('1T').mean()
